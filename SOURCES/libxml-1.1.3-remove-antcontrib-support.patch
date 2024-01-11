@@ -1,0 +1,229 @@
+diff -ru pentaho-libxml-1.1.3.orig/common_build.xml pentaho-libxml-1.1.3/common_build.xml
+--- pentaho-libxml-1.1.3.orig/common_build.xml	2021-06-28 17:28:26.396270761 +0100
++++ pentaho-libxml-1.1.3/common_build.xml	2021-06-28 17:32:01.697273657 +0100
+@@ -152,9 +152,6 @@
+   <property name="cobertura.build.cache.dir"
+             value="${build.cache.dir}/cobertura"
+             description="Directory where the Cobertura jar (and dependencies) is placed after it is auto-downloaded by the build" />
+-  <property name="antcontrib.build.cache.dir"
+-            value="${build.cache.dir}/ant-contrib"
+-            description="Directory where the Ant-Contrib jar (and dependencies) is placed after it is auto-downloaded by the build" />
+   <property name="pentaho.build.cache.dir"
+             value="${build.cache.dir}/pentaho"
+             description="Directory where the Pentaho ant tasks jar (and dependencies) is placed after it is auto-downloaded by the build" />
+@@ -326,68 +323,6 @@
+ 
+ 
+   <!--=======================================================================
+-	    install-antcontrib
+-	    
+-	    (Fetches and) installs ant-contrib tasks.
+-	    ====================================================================-->
+-  <target name="install-antcontrib"
+-          depends="antcontrib.download-check">
+-    <taskdef resource="net/sf/antcontrib/antlib.xml">
+-      <classpath>
+-        <fileset dir="${antcontrib.build.cache.dir}">
+-          <include name="*.jar" />
+-        </fileset>
+-      </classpath>
+-    </taskdef>
+-  </target>
+-
+-
+-  <!--=======================================================================
+-	    antcontrib.download-check
+-	    
+-	    Fetches ant-contrib from sourceforge if it is not already present
+-	    ====================================================================-->
+-  <target name="antcontrib.download-check">
+-    <condition property="antcontrib.available">
+-      <and>
+-        <available file="${antcontrib.build.cache.dir}" />
+-        <available classname="net.sf.antcontrib.logic.IfTask">
+-          <classpath>
+-            <fileset dir="${antcontrib.build.cache.dir}">
+-              <include name="*.jar" />
+-            </fileset>
+-          </classpath>
+-        </available>
+-      </and>
+-    </condition>
+-    <antcall target="antcontrib.download" />
+-  </target>
+-
+-
+-  <!--=======================================================================
+-	    antcontrib.download
+-	    
+-	    Fetches ant-contrib from sourceforge
+-	    ====================================================================-->
+-  <target name="antcontrib.download" unless="antcontrib.available">
+-    <mkdir dir="${tmp.build.cache.dir}" />
+-    <get src="http://downloads.sourceforge.net/ant-contrib/ant-contrib-1.0b3-bin.zip"
+-         dest="${tmp.build.cache.dir}/antcontrib.zip"
+-         usetimestamp="true" />
+-    <unzip src="${tmp.build.cache.dir}/antcontrib.zip" dest="${tmp.build.cache.dir}">
+-      <patternset>
+-        <include name="**/*.jar" />
+-      </patternset>
+-    </unzip>
+-    <copy todir="${antcontrib.build.cache.dir}">
+-      <fileset dir="${tmp.build.cache.dir}/ant-contrib">
+-        <include name="**/*.jar" />
+-      </fileset>
+-    </copy>
+-  </target>
+-
+-
+-  <!--=======================================================================
+ 	    init
+ 	    
+ 	    Ensures that all the required directories exist before processing
+@@ -445,7 +380,7 @@
+     (Fetches and) installs the SVN ANT for use by this ant script
+     ====================================================================-->
+   <target name="install-svnant"
+-          depends="install-antcontrib, svnant.download-check">
++          depends="svnant.download-check">
+     <if>
+       <istrue value="${svnant.isinstalled}" />
+       <then>
+@@ -492,57 +427,12 @@
+ 
+ 
+   <!--=======================================================================
+-        set-build.id
+-    
+-        Sets a property build.id to the either "development" or the svn revision
+-        if in release mode
+-        ====================================================================-->
+-  <target name="set-build.id" unless="build.id" depends="install-antcontrib">
+-    <if>
+-      <istrue value="${release}" />
+-      <then>
+-        <antcallback target="svn-revision" return="svn.revision" />
+-        <property name="build.id" value="${svn.revision}" />
+-      </then>
+-      <else>
+-        <property name="build.id" value="development" />
+-      </else>
+-    </if>
+-  </target>
+-
+-  <!--=================================================================================
+-       version-properties: common Ant driven version file generation.  Projects that produce
+-       a package or packages should run this target.  Projects that produce
+-       jars only should NOT.
+-   ===================================================================================-->
+-  <target name="version-properties" depends="set-build.id">
+-    <tstamp>
+-      <format property="build.time" pattern="yyyy/MM/dd hh:mm aa"/>
+-    </tstamp>
+-    <propertyfile
+-              file="version.properties" comment="Release Build version info">
+-      <entry key="release.major.number" value="${release.major.number}" />
+-      <entry key="release.minor.number" value="${release.minor.number}" />
+-      <entry key="release.milestone.number" value="${release.milestone.number}" />
+-      <entry key="release.candidate.token" value="${release.candidate.token}" />
+-      <entry key="impl.vendor" value="${impl.vendor}" />
+-      <entry key="impl.version" value="${release.major.number}.${release.minor.number}.${release.milestone.number}.${build.id}" />
+-      <entry key="impl.title" value="${impl.title}" />
+-      <entry key="buildDate" value="${build.time}"/>
+-      <entry key="svn.revision" value="${build.id}"/>
+-      <entry key="release.build.number" default="0" type="int" operation="+" value="1" pattern="0000"/>
+-    </propertyfile>
+-    <property file="${basedir}/version.properties"/>
+-  </target>
+-
+-
+-  <!--=======================================================================
+ 	    install-ivy
+ 	    
+ 	    (Fetches and) installs the IVY jar for use by this ant script
+ 	    ====================================================================-->
+   <target name="install-ivy"
+-          depends="install-antcontrib,ivy.download-check">
++          depends="ivy.download-check">
+     <if>
+       <istrue value="${ivy.isinstalled}" />
+       <then>
+@@ -602,7 +492,7 @@
+ 	    Verifies that there are no SNAPSHOT dependencies defined in the ivy xml.
+ 	    If there are SNAPSHOTS, fail the release build.
+ 	    ====================================================================-->
+-  <target name="ivy.check-releasable" depends="install-ivy, install-antcontrib">
++  <target name="ivy.check-releasable" depends="install-ivy">
+     <if>
+       <istrue value="${release}" />
+       <then>
+@@ -769,7 +659,7 @@
+ 	    Publishes the jar file for this project to a Maven2 repository.
+ 	    ====================================================================-->
+   <target name="publish-pentaho-nojar"
+-          depends="install-antcontrib,create-pom,ivy.deliver">
++          depends="create-pom,ivy.deliver">
+     <antcall target="maven-publish-dependencies">
+       <param name="publish.groupId" value="${ivy.artifact.group}" />
+       <param name="publish.artifactId" value="${ivy.artifact.id}" />
+@@ -1078,30 +968,12 @@
+   <!--=======================================================================
+ 	    compile.res_copy
+ 	    
+-	    Copies any needed resources into the classes directory.  Will not
+-	    duplicate copying of resources from src tree (handled by compile.src_copy
+-	    if jar.include.source is set.
++	    Copies any needed resources into the classes directory.
+ 	    ====================================================================-->
+-  <target name="compile.res_copy" depends="install-antcontrib">
+-    <if>
+-      <available file="${res.dir}" />
+-      <then>
+-        <copy todir="${classes.dir}">
+-          <fileset dir="${res.dir}" />
+-        </copy>
+-      </then>
+-    </if>
+-
+-    <if>
+-      <not>
+-        <isset property="jar.include.source" />
+-      </not>
+-      <then>
+-        <copy todir="${classes.dir}" flatten="false">
+-          <fileset dir="${src.dir}" excludes="**/*.java" />
+-        </copy>
+-      </then>
+-    </if>
++  <target name="compile.res_copy">
++    <copy todir="${classes.dir}" flatten="false">
++      <fileset dir="${src.dir}" excludes="**/*.java" />
++    </copy>
+   </target>
+ 
+ 
+@@ -1151,7 +1023,7 @@
+ 	    
+ 	    Creates a jar file from the bin directory
+ 	    ====================================================================-->
+-  <target name="jar" depends="compile,set-build.id,generate.manifest" description="Jars up the bin directory after a compile">
++  <target name="jar" depends="compile,generate.manifest" description="Jars up the bin directory after a compile">
+     <jar destfile="${dist.dir}/${ivy.artifact.id}-${project.revision}.jar" manifest="${dist.manifest.file}">
+       <fileset dir="${classes.dir}" />
+     </jar>
+@@ -1164,7 +1036,7 @@
+ 	    Creates a new manifest file if one is not specified, or updates
+ 	    an existing manifest file if one is specified.
+ 	    ====================================================================-->
+-  <target name="generate.manifest" depends="init,set-build.id">
++  <target name="generate.manifest" depends="init">
+     <delete file="${dist.manifest.file}" />
+     <touch file="${dist.manifest.file}" />
+     <copy file="${manifest.file}" tofile="${dist.manifest.file}" overwrite="true" failonerror="false" />
+@@ -1648,4 +1520,4 @@
+     </dot-classpath>
+   </target>
+ 
+-</project>
+\ No newline at end of file
++</project>

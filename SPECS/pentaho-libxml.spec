@@ -2,7 +2,7 @@
 
 Name: pentaho-libxml
 Version: 1.1.3
-Release: 17%{?dist}
+Release: 20%{?dist}
 Summary: Namespace aware SAX-Parser utility library
 License: LGPLv2
 Group: System Environment/Libraries
@@ -11,10 +11,15 @@ Group: System Environment/Libraries
 #to simplify the licensing
 Source: %{origname}-%{version}-jarsdeleted.zip
 URL: http://reporting.pentaho.org/
-BuildRequires: ant, ant-contrib, java-devel, jpackage-utils, libbase, libloader
-Requires: java, jpackage-utils, libbase >= 1.1.2, libloader >= 1.1.2
+BuildRequires: ant, ant-contrib, java-21-openjdk-devel, jpackage-utils, libbase, libloader
+Requires: java-21-openjdk-headless >= 1:21, jpackage-utils, libbase >= 1.1.2, libloader >= 1.1.2
 BuildArch: noarch
+
+%global java_home /usr/lib/jvm/java-21-openjdk
+
 Patch0: libxml-1.1.2-build.patch
+Patch1: libxml-1.1.2-java11.patch
+Patch2: libxml-1.1.3-remove-commons-logging.patch
 
 %description
 Pentaho LibXML is a namespace aware SAX-Parser utility library. It eases the
@@ -32,13 +37,16 @@ Javadoc for %{name}.
 %prep
 %setup -q -c
 %patch0 -p1 -b .build
+%patch1 -p1 -b .java11
+%patch2 -p1 -b .no_commons_logging
 find . -name "*.jar" -exec rm -f {} \;
 mkdir -p lib
-build-jar-repository -s -p lib commons-logging-api libbase libloader
+build-jar-repository -s -p lib libbase libloader
 cd lib
-ln -s %{_javadir}/ant ant-contrib
+ln -s /usr/share/java/ant ant-contrib
 
 %build
+export JAVA_HOME=%{java_home}
 ant jar javadoc
 for file in README.txt licence-LGPL.txt ChangeLog.txt; do
     tr -d '\r' < $file > $file.new
@@ -60,6 +68,18 @@ cp -rp bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{origname}
 %{_javadocdir}/%{origname}
 
 %changelog
+* Mon Oct 19 2026 Tomas Popela <tpopela@redhat.com> - 1.1.3-20
+- Remove commons logging dependency
+- Related: RHEL-286491
+
+* Tue Oct 06 2026 Tomas Popela <tpopela@redhat.com> - 1.1.3-19
+- OpenJDK 8 won't be supported anymore on RHEL 8 starting from November 2026,
+  move to OpenJDK 21
+- Resolves: RHEL-275423
+
+* Tue Nov 10 2020 Caolán McNamara <caolanm@redhat.com> - 1.1.3-18
+- Resolves: rhbz#1896326 Use /usr/share/java instead of _javadir macro for build dependencies
+
 * Thu Feb 08 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.3-17
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 

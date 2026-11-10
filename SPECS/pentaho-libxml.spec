@@ -2,7 +2,7 @@
 
 Name: pentaho-libxml
 Version: 1.1.3
-Release: 30%{?dist}
+Release: 31%{?dist}
 Summary: Namespace aware SAX-Parser utility library
 License: LGPLv2
 #Original source: http://downloads.sourceforge.net/jfreereport/%%{origname}-%%{version}.zip
@@ -63,6 +63,10 @@ cp -rp bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{origname}
 %{_javadocdir}/%{origname}
 
 %changelog
+* Tue Jun 30 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 1.1.3-31
+- Set javac source/target to 1.8 for java-17-openjdk compatibility
+- Resolves: RHEL-183539
+
 * Mon Aug 09 2021 Mohan Boddu <mboddu@redhat.com> - 1.1.3-30
 - Rebuilt for IMA sigs, glibc 2.34, aarch64 flags
   Related: rhbz#1991688
